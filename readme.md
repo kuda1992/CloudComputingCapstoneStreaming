@@ -50,16 +50,7 @@ The project uses spark and kafka to answer various questions using the us statis
 		.groupByKey() \
 		.map(calculate_average) \
 		.transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
-		.pprint(100)lines \
-		.map(get_carrier_and_arrival_delay) \
-		.filter(lambda line: len(line) > 1) \
-		.filter(lambda line: Helpers.is_carrier(line)) \
-		.map(lambda airport: (airport.get('carrier'), airport.get('average_delay'))) \
-		.groupByKey() \
-		.map(calculate_average) \
-		.transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
-		.pprint(100)
-	
+		.pprint(100)lines
 	``` 
 	
 	[AverageCarrierOnArrivalDelay.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/AverageCarrierOnArrivalDelay.py)
@@ -76,17 +67,6 @@ The project uses spark and kafka to answer various questions using the us statis
 	('F9', 7.122230909564764)
 	('FL', 7.2162202233863795)
 	('OH', 7.546905195737398)
-	('AS', 8.177964032874929)
-	('CO', 9.002926320853042)
-	('EV', 9.17060833902939)
-	('NW', 9.394402118824184)
-	('XE', 9.886929702048418)
-	('9E', 12.267573066962633)
-	('YV', 14.497241846511178)
-	('AA', 15.071998420221169)
-	('MQ', 15.115856940163413)
-	('OO', 18.224468614180378)
-	('UA', 19.83305925560489)
 	```
 	
 ### Question 3
