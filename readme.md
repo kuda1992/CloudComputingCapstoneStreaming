@@ -1,4 +1,4 @@
-#Cloud Computing Capstone Streaming 
+# Cloud Computing Capstone Streaming 
 
 The project uses spark and kafka to answer various questions using the us statistics aviation data https://www.transtats.bts.gov/DataIndex.asp
 
@@ -8,14 +8,14 @@ The project uses spark and kafka to answer various questions using the us statis
 	#### Query
 
 	```
-		lines \
-			.map(get_original_airport_and_destination_airport) \
-			.filter(lambda line: len(line) > 1) \
-			.filter(lambda line: Helpers.is_airport(line)) \
-			.flatMap(lambda line: line.split(",")) \
-			.countByValue() \
-			.transform(lambda airports: airports.sortBy(lambda t: t[1], ascending=False)) \
-			.pprint(10)
+	lines \
+		.map(get_original_airport_and_destination_airport) \
+		.filter(lambda line: len(line) > 1) \
+		.filter(lambda line: Helpers.is_airport(line)) \
+		.flatMap(lambda line: line.split(",")) \
+		.countByValue() \
+		.transform(lambda airports: airports.sortBy(lambda t: t[1], ascending=False)) \
+		.pprint(10)
 	
 	``` 
 	
@@ -24,16 +24,16 @@ The project uses spark and kafka to answer various questions using the us statis
     #### Results 
     
     ```
-    ('ATL', 67787)
-		('ORD', 59872)
-		('DFW', 47735)
-		('DEN', 38959)
-		('LAX', 37909)
-		('PHX', 35388)
-		('IAH', 31061)
-		('LAS', 30584)
-		('DTW', 28754)
-		('EWR', 24937)
+	('ATL', 67787)
+	('ORD', 59872)
+	('DFW', 47735)
+	('DEN', 38959)
+	('LAX', 37909)
+	('PHX', 35388)
+	('IAH', 31061)
+	('LAS', 30584)
+	('DTW', 28754)
+	('EWR', 24937)
     ```
 
 ### Question 2
@@ -42,15 +42,23 @@ The project uses spark and kafka to answer various questions using the us statis
 	#### Query
 
 	```
-		lines \
-			.map(get_carrier_and_arrival_delay) \
-			.filter(lambda line: len(line) > 1) \
-			.filter(lambda line: Helpers.is_carrier(line)) \
-			.map(lambda airport: (airport.get('carrier'), airport.get('average_delay'))) \
-			.groupByKey() \
-			.map(calculate_average) \
-			.transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
-			.pprint(100)
+	lines \
+		.map(get_carrier_and_arrival_delay) \
+		.filter(lambda line: len(line) > 1) \
+		.filter(lambda line: Helpers.is_carrier(line)) \
+		.map(lambda airport: (airport.get('carrier'), airport.get('average_delay'))) \
+		.groupByKey() \
+		.map(calculate_average) \
+		.transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
+		.pprint(100)lines \
+		.map(get_carrier_and_arrival_delay) \
+		.filter(lambda line: len(line) > 1) \
+		.filter(lambda line: Helpers.is_carrier(line)) \
+		.map(lambda airport: (airport.get('carrier'), airport.get('average_delay'))) \
+		.groupByKey() \
+		.map(calculate_average) \
+		.transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
+		.pprint(100)
 	
 	``` 
 	
@@ -108,6 +116,8 @@ The project uses spark and kafka to answer various questions using the us statis
 	('OH', 19.636170212765958)
 	('UA', 24.31140350877193)
 	```
+	
+	[topCarriersOnDepartureForEachAirport.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/topCarriersOnDepartureForEachAirport.py)
 
 ### Question 4
 - For each airport X, rank the top-10 airports in decreasing order of on-time departure performance from X.
