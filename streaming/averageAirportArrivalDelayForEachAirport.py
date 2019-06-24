@@ -58,7 +58,7 @@ if __name__ == "__main__":
         .groupByKey() \
         .map(calculate_average) \
         .transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
-        .pprint(100)
+        .pprint(10)
 
 spark_streaming_context.start()
 spark_streaming_context.awaitTermination()

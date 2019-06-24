@@ -154,6 +154,19 @@ The project uses spark and kafka to answer various questions using the us statis
 
 ### Question 5
 - For each source-destination pair X-Y, rank the top-10 carriers in decreasing order of on-time arrival performance at Y from X.
+	### Query
+	```
+	lines \
+        .map(get_airport_carrier_and_departure_delay) \
+        .filter(lambda line: len(line) > 1) \
+        .filter(lambda line: Helpers.is_carrier(line) and Helpers.is_airportid(line)) \
+        .filter(lambda line: line.get('airport') == origin_airport_filter and line.get('dest_airport') == dest_airport_filter) \
+        .map(lambda line: (line.get('carrier'), line.get('departure_delay'))) \
+        .groupByKey() \
+        .map(calculate_average) \
+        .transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
+        .pprint(10)
+	```
 
 	#### Results
 	```
@@ -164,7 +177,7 @@ The project uses spark and kafka to answer various questions using the us statis
 
 	```
 	
-	[topAirportsOnDepartureForEachAirport.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/topAirportsOnDepartureForEachAirport.py)
+	[averageAirportArrivalDelayForEachAirport.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/averageAirportArrivalDelayForEachAirport.py)
 
 ### Question 6
 - Does the popularity distribution of airports follow a Zipf distribution? If not, what distribution does it follow?
