@@ -122,8 +122,49 @@ The project uses spark and kafka to answer various questions using the us statis
 ### Question 4
 - For each airport X, rank the top-10 airports in decreasing order of on-time departure performance from X.
 
+	### Query
+	```
+	lines \
+        .map(get_airport_dest_airport_and_departure_delay) \
+        .filter(lambda line: len(line) > 1) \
+        .filter(lambda line: Helpers.is_airportid(line)) \
+        .filter(lambda line: line.get('airport') == airport_filter) \
+        .map(lambda line: (line.get('dest_airport'), line.get('departure_delay'))) \
+        .groupByKey() \
+        .map(calculate_average) \
+        .transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
+        .pprint(10)
+	```
+
+	#### Results 
+	```
+	('STX', -2.8)
+	('TUP', -1.8888888888888888)
+	('HDN', 0.5483870967741935)
+	('JAC', 0.8333333333333334)
+	('ABQ', 1.1149425287356323)
+	('BZN', 1.8)
+	('BDL', 2.3353293413173652)
+	('SNA', 3.5428571428571427)
+	('TUS', 4.160714285714286)
+	('JAX', 4.251599147121535)
+	```
+	
+	[topAirportsOnDepartureForEachAirport.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/topAirportsOnDepartureForEachAirport.py)
+
 ### Question 5
 - For each source-destination pair X-Y, rank the top-10 carriers in decreasing order of on-time arrival performance at Y from X.
+
+	#### Results
+	```
+	
+	**ATL -> OLD**
+	('OO', 9.433333333333334)
+	('UA', 28.142857142857142)
+
+	```
+	
+	[topAirportsOnDepartureForEachAirport.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/topAirportsOnDepartureForEachAirport.py)
 
 ### Question 6
 - Does the popularity distribution of airports follow a Zipf distribution? If not, what distribution does it follow?
