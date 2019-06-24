@@ -83,6 +83,31 @@ The project uses spark and kafka to answer various questions using the us statis
 	
 ### Question 3
 - For each airport X, rank the top-10 carriers in decreasing order of on-time departure performance from X.
+	
+	### Query
+	```
+	lines \
+        .map(get_airport_carrier_and_departure_delay) \
+        .filter(lambda line: len(line) > 1) \
+        .filter(lambda line: Helpers.is_carrier(line) and Helpers.is_airportid(line)) \
+        .filter(lambda line: line.get('airport') == airport_filter) \
+        .map(lambda line: (line.get('carrier'), line.get('departure_delay'))) \
+        .groupByKey() \
+        .map(calculate_average) \
+        .transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
+        .pprint(100)
+	```
+
+	### Results 
+	```
+	**ATL**
+	('NW', 0.0738255033557047)
+	('XE', 0.5576923076923077)
+	('OO', 7.407494145199063)
+	('US', 8.698245614035088)
+	('OH', 19.636170212765958)
+	('UA', 24.31140350877193)
+	```
 
 ### Question 4
 - For each airport X, rank the top-10 airports in decreasing order of on-time departure performance from X.

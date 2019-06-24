@@ -19,6 +19,10 @@ class Helpers:
         return len(airport.get('carrier')) == 2
 
     @staticmethod
+    def is_airportid(airport):
+        return len(airport.get('airport')) == 3
+
+    @staticmethod
     def print_results(rdd):
         """
            Print results to screen.
