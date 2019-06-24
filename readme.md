@@ -4,22 +4,41 @@ The project uses spark and kafka to answer various questions using the us statis
 
 ### Question 1
 - Rank the top 10 most popular airports by numbers of flights to/from the airport.
+	
+	#### Query
 
-```
-	lines \
-		.map(get_original_airport_and_destination_airport) \
-		.filter(lambda line: len(line) > 1) \
-		.filter(lambda line: Helpers.is_airport(line)) \
-		.flatMap(lambda line: line.split(",")) \
-		.countByValue() \
-		.transform(lambda airports: airports.sortBy(lambda t: t[1], ascending=False)) \
-		.pprint(10)
-
-```        
+	```
+		lines \
+			.map(get_original_airport_and_destination_airport) \
+			.filter(lambda line: len(line) > 1) \
+			.filter(lambda line: Helpers.is_airport(line)) \
+			.flatMap(lambda line: line.split(",")) \
+			.countByValue() \
+			.transform(lambda airports: airports.sortBy(lambda t: t[1], ascending=False)) \
+			.pprint(10)
+	
+	``` 
+	
+      
 
 ### Question 2
 - Rank the top 10 airlines by on-time arrival performance.
 
+	#### Query
+
+	```
+		lines \
+			.map(get_carrier_and_arrival_delay) \
+			.filter(lambda line: len(line) > 1) \
+			.filter(lambda line: Helpers.is_carrier(line)) \
+			.map(lambda airport: (airport.get('carrier'), airport.get('average_delay'))) \
+			.groupByKey() \
+			.map(calculate_average) \
+			.transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
+			.pprint(100)
+	
+	``` 
+	
 ### Question 3
 - For each airport X, rank the top-10 carriers in decreasing order of on-time departure performance from X.
 
