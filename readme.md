@@ -19,7 +19,22 @@ The project uses spark and kafka to answer various questions using the us statis
 	
 	``` 
 	
-      
+    [MostPopularAirports.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/MostPopularAirports.py)
+    
+    #### Results 
+    
+    ```
+    ('ATL', 67787)
+		('ORD', 59872)
+		('DFW', 47735)
+		('DEN', 38959)
+		('LAX', 37909)
+		('PHX', 35388)
+		('IAH', 31061)
+		('LAS', 30584)
+		('DTW', 28754)
+		('EWR', 24937)
+    ```
 
 ### Question 2
 - Rank the top 10 airlines by on-time arrival performance.
@@ -38,6 +53,33 @@ The project uses spark and kafka to answer various questions using the us statis
 			.pprint(100)
 	
 	``` 
+	
+	[AverageCarrierOnArrivalDelay.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/AverageCarrierOnArrivalDelay.py)
+	
+	#### Results
+	
+	```
+	('HA', -2.5192846369316957)
+	('KH', -2.5125)
+	('US', 1.823384311790824)
+	('DL', 4.4382083254442675)
+	('B6', 4.858456222619855)
+	('WN', 6.868690501163755)
+	('F9', 7.122230909564764)
+	('FL', 7.2162202233863795)
+	('OH', 7.546905195737398)
+	('AS', 8.177964032874929)
+	('CO', 9.002926320853042)
+	('EV', 9.17060833902939)
+	('NW', 9.394402118824184)
+	('XE', 9.886929702048418)
+	('9E', 12.267573066962633)
+	('YV', 14.497241846511178)
+	('AA', 15.071998420221169)
+	('MQ', 15.115856940163413)
+	('OO', 18.224468614180378)
+	('UA', 19.83305925560489)
+	```
 	
 ### Question 3
 - For each airport X, rank the top-10 carriers in decreasing order of on-time departure performance from X.
