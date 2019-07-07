@@ -263,10 +263,15 @@ Kafka is used to get data from s3 and publish it to Kafka topic (aviation datase
 
     }
 	```
+	
+	[AverageAirportDelayForEachAirportConsumer](https://github.com/kuda1992/AverageAirportDelayForEachAirportConsumer/blob/master/src/main/java/AverageAirportDelayForEachAirportConsumer.java)
+	
+	#### Running the consumer
+	
+	```java -jar AverageAirportDelayForEachAirportConsume,jar AKIA5XVWCIBM54RUJ44Q b9kSTvhBiL4rWiTGTI3ZYZXiTf3aIfGhjTN1mPKd localhost:9092 cloud-computing-capstone average-airport-delay-for-each-airport```
 
 	#### Results
 	```
-	
 	**ATL -> OLD**
 	('OO', 9.433333333333334)
 	('UA', 28.142857142857142)
