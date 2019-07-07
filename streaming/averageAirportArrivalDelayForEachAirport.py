@@ -89,7 +89,7 @@ if __name__ == "__main__":
     conf.set("spark.streaming.backpressure.initialRate", "100")
 
     broker = sys.argv[1]
-    kafka_host = sys[2]
+    kafka_host = sys.argv[2]
     source_topic = sys.argv[3]
     origin_airport_filter = sys.argv[4]
     dest_airport_filter = sys.argv[5]
@@ -110,6 +110,7 @@ if __name__ == "__main__":
         .groupByKey() \
         .map(calculate_average) \
         .transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
+        .take(10) \
         .foreachRDD(handler)
 
 spark_streaming_context.start()

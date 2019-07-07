@@ -4,26 +4,49 @@ The project uses spark and kafka to answer various questions using the us statis
 
 
 ## System Architecture
-In this project I have used Kafka, Spark Streaming, and S3. Kafka is used to get data from s3 and publish it to Kafka topic (aviation dataset). 
+In this project I have used Kafka, Spark Streaming, and S3.
+
+Kafka is used to get data from s3 and publish it to Kafka topic (aviation dataset). I use an s3 java client to get the data from s3 which downloads it to a remote machine and sends it to kafka. 
+
+
+ 1. Kafka Producer [KafkaProduer](https://github.com/kuda1992/GetS3AviationData/blob/master/src/main/java/KafkaProducerClient.java)
+ 2. S3 client [Get S3 Data](https://github.com/kuda1992/GetS3AviationData/blob/master/src/main/java/GetS3AviationData.java)
+
+	Send to jar to ec2 instance
+	
+	```scp -i "newKuda.pem" /Users/kuda/aws/MapReduce/GetS3AviationData/out/artifacts/GetS3AviationData_jar/GetS3AviationData.jar ubuntu@ec2-18-130-83-25.eu-west-2.compute.amazonaws.com:~/```
+	
+	Run the jar onto the ec2 instance
+	
+	```java --jar GetS3AviationData.jar 'awskeyid' 'awssecret''```
+
 
 
 
 ### Question 1
 - Rank the top 10 most popular airports by numbers of flights to/from the airport.
+
+	To answer this question I have used Python Spark Streaming combined with Kafka. Spark streaming application gets data from a Kafka topic (aviation-dataset) which applies backpressure which only takes in 100 records at a time and processes them to get the most popular airport in descending order. 
 	
 	#### Query
 
 	```
-	lines \
-		.map(get_original_airport_and_destination_airport) \
-		.filter(lambda line: len(line) > 1) \
-		.filter(lambda line: Helpers.is_airport(line)) \
-		.flatMap(lambda line: line.split(",")) \
-		.countByValue() \
-		.transform(lambda airports: airports.sortBy(lambda t: t[1], ascending=False)) \
-		.pprint(10)
+	df = KafkaUtils.createDirectStream(ssc, [source_topic], {"metadata.broker.list": broker}, valueDecoder=decoder)
+
+    df \
+        .map(get_original_airport_and_destination_airport) \
+        .filter(lambda line: len(line) > 3) \
+        .filter(lambda line: Helpers.is_airport(line)) \
+        .flatMap(lambda line: line.split(",")) \
+        .countByValue() \
+        .transform(lambda airports: airports.sortBy(lambda t: t[1], ascending=False)) \
+        .foreachRDD(handler)
 	
 	``` 
+	
+	#### Running the application
+	
+	```spark-submit  --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.1.0 --jars  spark-streaming-kafka-0-8_2.11-2.0.0-preview.jar streaming/MostPopularAirports.py localhost:9092 aviation-dataset```
 	
     [MostPopularAirports.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/MostPopularAirports.py)
     
@@ -45,19 +68,26 @@ In this project I have used Kafka, Spark Streaming, and S3. Kafka is used to get
 ### Question 2
 - Rank the top 10 airlines by on-time arrival performance.
 
+	This questions asks us to rank the top 10 airlines with the least arrival delay. So we get each airline and the average delay per record. Group each carrier by key which allows us to calculate the average delay for each airline based on the count. We then sort the results in ascending order and print the first 10 records which show the top carriers  on arrival performance. 
+
 	#### Query
 
 	```
-	lines \
-		.map(get_carrier_and_arrival_delay) \
-		.filter(lambda line: len(line) > 1) \
-		.filter(lambda line: Helpers.is_carrier(line)) \
-		.map(lambda airport: (airport.get('carrier'), airport.get('average_delay'))) \
-		.groupByKey() \
-		.map(calculate_average) \
-		.transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
-		.pprint(100)lines
+	df = KafkaUtils.createDirectStream(spark_context, [source_topic], {"metadata.broker.list": broker})
+
+    df \
+        .map(get_carrier_and_arrival_delay) \
+        .filter(lambda line: len(line) > 1) \
+        .filter(lambda line: is_carrier(line)) \
+        .map(lambda airport: (airport.get('carrier'), airport.get('average_delay'))) \
+        .groupByKey() \
+        .map(calculate_average) \
+        .transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
+        .foreachRDD(handler)
 	``` 
+	#### Running the application
+	
+	```spark-submit  --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.1.0 --jars  spark-streaming-kafka-0-8_2.11-2.0.0-preview.jar streaming/AverageCarrierOnArrivalDelay.py localhost:9092 aviation-dataset```
 	
 	[AverageCarrierOnArrivalDelay.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/AverageCarrierOnArrivalDelay.py)
 	
@@ -77,6 +107,8 @@ In this project I have used Kafka, Spark Streaming, and S3. Kafka is used to get
 	
 ### Question 3
 - For each airport X, rank the top-10 carriers in decreasing order of on-time departure performance from X.
+
+	This question allows us to rank the top 10 carriers for each airport. To calculate this we need to submit an airport as a query which will filter the results based on the query. The filtered results will be used to get the carrier and average departure delay as a tuple, which will be grouped by key and then calculate the average,
 	
 	### Query
 	```
@@ -91,6 +123,10 @@ In this project I have used Kafka, Spark Streaming, and S3. Kafka is used to get
         .transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
         .pprint(100)
 	```
+	
+	#### Running the application
+	
+	```spark-submit  --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.1.0 --jars  spark-streaming-kafka-0-8_2.11-2.0.0-preview.jar streaming/topCarriersOnDepartureForEachAirport.py localhost:9092 aviation-dataset ATL```
 
 	### Results 
 	```
@@ -108,6 +144,8 @@ In this project I have used Kafka, Spark Streaming, and S3. Kafka is used to get
 ### Question 4
 - For each airport X, rank the top-10 airports in decreasing order of on-time departure performance from X.
 
+	This question allows us to rank the top 10 airports for each airport. To calculate this we need to submit an airport as a query which will filter the results based on the query. The filtered results will be used to get the airport and average departure delay as a tuple, which will be grouped by key and then calculate the average,
+	
 	### Query
 	```
 	lines \
@@ -122,6 +160,10 @@ In this project I have used Kafka, Spark Streaming, and S3. Kafka is used to get
         .pprint(10)
 	```
 
+	#### Running the application
+	
+	```spark-submit  --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.1.0 --jars  spark-streaming-kafka-0-8_2.11-2.0.0-preview.jar streaming/topAirportsOnDepartureForEachAirport.py localhost:9092 aviation-dataset ATL```
+	
 	#### Results 
 	```
 	 **ATL**
@@ -141,18 +183,24 @@ In this project I have used Kafka, Spark Streaming, and S3. Kafka is used to get
 
 ### Question 5
 - For each source-destination pair X-Y, rank the top-10 carriers in decreasing order of on-time arrival performance at Y from X.
+
+	This question allows us to calculate the the top 10 carriers between to destinations pairs. We submit two destinations as the query to the application. For example ATL -> OLD, we then first filter the results based on the submitted query and get the carrier and departure delay as a tuple. The records are grouped by carrier and the calculate the average arrival delay. The results are then send to a Kafka topic (average-airport-delay-for-each-airport). We have an Kafka Consumer listening to the topic and sending the results to DynamoDB database. 
+	
 	### Query
 	```
-	lines \
+	df = KafkaUtils.createDirectStream(spark_streaming_context, [source_topic], {"metadata.broker.list": broker})
+
+    df \
         .map(get_airport_carrier_and_departure_delay) \
         .filter(lambda line: len(line) > 1) \
-        .filter(lambda line: Helpers.is_carrier(line) and Helpers.is_airportid(line)) \
+        .filter(lambda line: is_carrier(line) and is_airportid(line)) \
         .filter(lambda line: line.get('airport') == origin_airport_filter and line.get('dest_airport') == dest_airport_filter) \
         .map(lambda line: (line.get('carrier'), line.get('departure_delay'))) \
         .groupByKey() \
         .map(calculate_average) \
         .transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
-        .pprint(10)
+        .take(10) \
+        .foreachRDD(handler)
 	```
 
 	#### Results
@@ -163,6 +211,10 @@ In this project I have used Kafka, Spark Streaming, and S3. Kafka is used to get
 	('UA', 28.142857142857142)
 
 	```
+	
+	#### Running the application
+	
+	```spark-submit  --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.1.0 --jars  spark-streaming-kafka-0-8_2.11-2.0.0-preview.jar streaming/averageAirportArrivalDelayForEachAirport.py localhost:9092 18.130.83.25:2181 aviation-dataset ATL OLD```
 	
 	[averageAirportArrivalDelayForEachAirport.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/averageAirportArrivalDelayForEachAirport.py)
 
