@@ -288,6 +288,22 @@ Kafka is used to get data from s3 and publish it to Kafka topic (aviation datase
 ### Question 6
 - Does the popularity distribution of airports follow a Zipf distribution? If not, what distribution does it follow?
 
+	The CCDF of the popularity for airports looks like the following.
+	![Power Law Fit](powerlaw_fit.png)
+	
+	The CCDF of power-law distributions should be a straight line. Also the lognormal distribution fits
+	better to the empirical data. So, the popularity of the airports definitely doesn't follow Zipf distribution.
+	
+	Loglikelyhood ration tests gives us the following results, when comparing the fitted power-law and lognormal distributions:
+	```
+	R -3.485522, p 0.000491
+	```
+	As R is negative, the empirical data is more likely follows a lognormal distribution.
+
+	#### References
+	* [Python code in GitHub](https://github.com/gitaroktato/cloud-capstone/blob/master/python/popularity_check.py)
+	* [Python powerlaw package usage explanation](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3906378/)
+
 ### Question 7
 - Tom wants to travel from airport X to airport Z. However, Tom also wants to stop at airport Y for some sightseeing on the way. More concretely, Tom has the following requirements (for specific queries, see the Task 1 Queries and Task 2 Queries):
 
