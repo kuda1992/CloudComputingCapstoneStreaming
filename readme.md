@@ -20,7 +20,17 @@ Kafka is used to get data from s3 and publish it to Kafka topic (aviation datase
 	
 	```java --jar GetS3AviationData.jar 'awskeyid' 'awssecret''```
 
-
+ ## Setting up Kafka on AWS 
+ 
+ 	```	
+ 		ssh -i "newKuda.pem" ubuntu@ec2-18-130-83-25.eu-west-2.compute.amazonaws.com
+ 		bin/zookeeper-server-start.sh config/zookeeper.properties
+ 		bin/kafka-server-start.sh config/server.properties
+ 		bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic average-airport-delay-for-each-airport
+		bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic top-carriers-for-each-airport
+		bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic top-airports-for-each-airport
+		bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic best-flight-on-given-day
+ 	```
 ### Question 1
 - Rank the top 10 most popular airports by numbers of flights to/from the airport.
 
