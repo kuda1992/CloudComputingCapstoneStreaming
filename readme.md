@@ -21,8 +21,6 @@ Kafka is used to get data from s3 and publish it to Kafka topic (aviation datase
 	```java --jar GetS3AviationData.jar 'awskeyid' 'awssecret''```
 
 
-
-
 ### Question 1
 - Rank the top 10 most popular airports by numbers of flights to/from the airport.
 
@@ -108,7 +106,7 @@ Kafka is used to get data from s3 and publish it to Kafka topic (aviation datase
 ### Question 3
 - For each airport X, rank the top-10 carriers in decreasing order of on-time departure performance from X.
 
-	This question allows us to rank the top 10 carriers for each airport. To calculate this we need to submit an airport as a query which will filter the results based on the query. The filtered results will be used to get the carrier and average departure delay as a tuple, which will be grouped by key and then calculate the average,
+	This question allows us to rank the top 10 carriers for each airport. To calculate this we need to submit an airport as a query which will filter the results based on the query. The filtered results will be used to get the carrier and average departure delay as a tuple, which will be grouped by key and then calculate the average. The results are published onto a kafka topic(top-carriers-for-each-airport) which will send these results onto DynamoDB.
 	
 	### Query
 	```
@@ -123,6 +121,94 @@ Kafka is used to get data from s3 and publish it to Kafka topic (aviation datase
         .transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
         .pprint(100)
 	```
+	
+	### Kafka Consumer
+	
+	```
+		package com.cloud;
+
+		import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+		import com.amazonaws.services.dynamodbv2.document.Item;
+		import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
+		import com.amazonaws.services.dynamodbv2.document.Table;
+		import org.apache.kafka.clients.consumer.ConsumerRecord;
+		import org.apache.kafka.clients.consumer.ConsumerRecords;
+		import org.apache.kafka.clients.consumer.KafkaConsumer;
+		import org.apache.log4j.Logger;
+		
+		import java.util.Collections;
+		
+		public class TopCarriersForEachAirportConsumer {
+		
+			private final static Logger LOGGER = Logger.getLogger(TopCarriersForEachAirportConsumer.class);
+		
+			private DynamoDB dynamoDB;
+		
+			public TopCarriersForEachAirportConsumer(KafkaConsumerClient kafkaConsumerClient, DynamoDBClient dynamoDBClient) {
+		
+				KafkaConsumer<Long, String> kafkaConsumer = kafkaConsumerClient.consumer;
+				dynamoDB = dynamoDBClient.dynamoDB;
+		
+				String topic = "top-carriers-for-each-airport";
+				kafkaConsumer.subscribe(Collections.singletonList(topic));
+		
+				LOGGER.info("Listening to records on topic: " + topic);
+		
+				while (true) {
+					ConsumerRecords<Long, String> consumerRecords = kafkaConsumer.poll(1000);
+					consumerRecords.forEach(this::sendTopicRecordToDynamoDB);
+					kafkaConsumer.commitAsync();
+				}
+		
+		
+			}
+		
+			private void sendTopicRecordToDynamoDB(ConsumerRecord<Long, String> consumerRecord) {
+				LOGGER.info("Record key: " + consumerRecord.key());
+				LOGGER.info("Record value: " + consumerRecord.value());
+				LOGGER.info("Record partition: " + consumerRecord.partition());
+				LOGGER.info("Record offset: " + consumerRecord.offset());
+		
+				final String[] carrierAndDelayAverage = consumerRecord.value()
+						.replace("(", "")
+						.replace("[", "")
+						.replace("]", "")
+						.replace(")", "")
+						.replace("\"", "")
+						.replace("'", "")
+						.split(",");
+		
+				if (carrierAndDelayAverage.length == 2) {
+					final String carrier = carrierAndDelayAverage[0];
+					final Float averageDelay = Float.parseFloat(carrierAndDelayAverage[1]);
+					LOGGER.info("Sending carrier: " + carrier + " with average delay " + averageDelay);
+		
+					Table table = dynamoDB.getTable("top-carriers-for-each-airport-streaming");
+		
+					try {
+						final Item item = new Item()
+								.withPrimaryKey("average_delay", averageDelay)
+								.with("carrier", carrier);
+		
+						final PutItemOutcome putItemOutcome = table.putItem(item);
+						LOGGER.info("Item has been put into database successfully" + putItemOutcome.getPutItemResult());
+		
+					} catch (Exception e) {
+						LOGGER.error("Failed to put item into table");
+						e.printStackTrace();
+					}
+		
+				}
+			}
+		
+		
+		} 
+	```
+	[TopCarriersForEachAirportConsumer](https://github.com/kuda1992/TopAirportsForEachAirportConsumer/blob/master/src/main/java/TopAirportsForEachAirportConsumer.java)
+	
+	#### Running the consumer
+
+	```java -jar TopCarriersForEachAirportConsumer.jar AKIA5XVWCIBM54RUJ44Q b9kSTvhBiL4rWiTGTI3ZYZXiTf3aIfGhjTN1mPKd localhost:9092 cloud-computing-capstone top-carriers-for-each-airport```
 	
 	#### Running the application
 	
@@ -146,24 +232,112 @@ Kafka is used to get data from s3 and publish it to Kafka topic (aviation datase
 
 	This question allows us to rank the top 10 airports for each airport. To calculate this we need to submit an airport as a query which will filter the results based on the query. The filtered results will be used to get the airport and average departure delay as a tuple, which will be grouped by key and then calculate the average,
 	
+	### Kafka Consumer
+	```
+		import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+		import com.amazonaws.services.dynamodbv2.document.Item;
+		import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
+		import com.amazonaws.services.dynamodbv2.document.Table;
+		import org.apache.kafka.clients.consumer.ConsumerRecord;
+		import org.apache.kafka.clients.consumer.ConsumerRecords;
+		import org.apache.kafka.clients.consumer.KafkaConsumer;
+		import org.apache.log4j.Logger;
+		
+		import java.util.Collections;
+		
+		public class TopAirportsForEachAirportConsumer {
+		
+		
+			private final static Logger LOGGER = Logger.getLogger(TopAirportsForEachAirportConsumer.class);
+		
+			private DynamoDB dynamoDB;
+		
+			public TopAirportsForEachAirportConsumer(KafkaConsumerClient kafkaConsumerClient, DynamoDBClient dynamoDBClient) {
+		
+				KafkaConsumer<Long, String> kafkaConsumer = kafkaConsumerClient.consumer;
+				dynamoDB = dynamoDBClient.dynamoDB;
+		
+				String topic = "top-airports-for-each-airport";
+				kafkaConsumer.subscribe(Collections.singletonList(topic));
+		
+				LOGGER.info("Listening to records on topic: " + topic);
+		
+				while (true) {
+					ConsumerRecords<Long, String> consumerRecords = kafkaConsumer.poll(1000);
+					consumerRecords.forEach(this::sendTopicRecordToDynamoDB);
+					kafkaConsumer.commitAsync();
+				}
+		
+		
+			}
+		
+			private void sendTopicRecordToDynamoDB(ConsumerRecord<Long, String> consumerRecord) {
+				LOGGER.info("Record key: " + consumerRecord.key());
+				LOGGER.info("Record value: " + consumerRecord.value());
+				LOGGER.info("Record partition: " + consumerRecord.partition());
+				LOGGER.info("Record offset: " + consumerRecord.offset());
+		
+				final String[] airportAndDelayAverage = consumerRecord.value()
+						.replace("(", "")
+						.replace("[", "")
+						.replace("]", "")
+						.replace(")", "")
+						.replace("\"", "")
+						.replace("'", "")
+						.split(",");
+		
+				if (airportAndDelayAverage.length == 2) {
+					final String airport = airportAndDelayAverage[0];
+					final Float averageDelay = Float.parseFloat(airportAndDelayAverage[1]);
+					LOGGER.info("Sending airport: " + airport + " with average delay " + averageDelay);
+		
+					Table table = dynamoDB.getTable("average-airport-delay-for-each-airport-streaming");
+		
+					try {
+						final Item item = new Item()
+								.withPrimaryKey("average_delay", averageDelay)
+								.with("airport", airport);
+		
+						final PutItemOutcome putItemOutcome = table.putItem(item);
+						LOGGER.info("Item has been put into database successfully" + putItemOutcome.getPutItemResult());
+		
+					} catch (Exception e) {
+						LOGGER.error("Failed to put item into table");
+						e.printStackTrace();
+					}
+		
+				}
+		
+			}
+		}
+	```
+	
+	[TopAirportsForEachAirportConsumer](https://github.com/kuda1992/TopAirportsForEachAirportConsumer/blob/master/src/main/java/TopAirportsForEachAirportConsumer.java)
+	
 	### Query
 	```
-	lines \
+	df = KafkaUtils.createDirectStream(ssc, [source_topic], {"metadata.broker.list": broker})
+
+    df \
         .map(get_airport_dest_airport_and_departure_delay) \
         .filter(lambda line: len(line) > 1) \
-        .filter(lambda line: Helpers.is_airportid(line)) \
+        .filter(lambda line: is_airportid(line)) \
         .filter(lambda line: line.get('airport') == airport_filter) \
         .map(lambda line: (line.get('dest_airport'), line.get('departure_delay'))) \
         .groupByKey() \
         .map(calculate_average) \
         .transform(lambda carriers: carriers.sortBy(lambda t: t[1], ascending=True)) \
-        .pprint(10)
+        .foreachRDD(handler)
+
 	```
+	#### Running the consumer
+
+	```java -jar TopAirportsForEachAirportConsumer.jar AKIA5XVWCIBM54RUJ44Q b9kSTvhBiL4rWiTGTI3ZYZXiTf3aIfGhjTN1mPKd localhost:9092 cloud-computing-capstone top-airports-for-each-airport```
 
 	#### Running the application
 	
 	```spark-submit  --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.1.0 --jars  spark-streaming-kafka-0-8_2.11-2.0.0-preview.jar streaming/topAirportsOnDepartureForEachAirport.py localhost:9092 aviation-dataset ATL```
-	
+
 	#### Results 
 	```
 	 **ATL**
@@ -277,10 +451,7 @@ Kafka is used to get data from s3 and publish it to Kafka topic (aviation datase
 	('UA', 28.142857142857142)
 
 	```
-	
-	
 	#### Running the application
-	
 	```spark-submit  --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.1.0 --jars  spark-streaming-kafka-0-8_2.11-2.0.0-preview.jar streaming/averageAirportArrivalDelayForEachAirport.py localhost:9092 18.130.83.25:2181 aviation-dataset ATL OLD```
 	
 	[averageAirportArrivalDelayForEachAirport.py](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/averageAirportArrivalDelayForEachAirport.py)
@@ -315,6 +486,39 @@ Kafka is used to get data from s3 and publish it to Kafka topic (aviation datase
 	 
 	 #### Part 3
 	 Tom wants to arrive at each destination with as little delay as possible. You can assume you know the actual delay of each flight.
+	 
+	 ### Query 
+	 
+	 ```
+	 	spark_streaming_context = StreamingContext(spark_context, 60)
+
+    df = KafkaUtils.createDirectStream(spark_context, [source_topic], {"metadata.broker.list": broker})
+
+    first_flight = df \
+        .filter(lambda l: is_not_first_line(l)) \
+        .map(get_flights_details) \
+        .filter(lambda line: len(line) > 1) \
+        .filter(lambda line: is_carrier(line) and is_airportid(line)) \
+        .filter(lambda line: line.get('airport') == origin_airport_filter and line.get('stop_over') == stop_over_airport_filter and line.get('departure_date') == date_filter) \
+        .map(lambda line: (line.get('airport'), line.get('stop_over'), line.get('departure_date'), line.get('departure_time'), line.get('carrier'), line.get('arrival_delay'))) \
+        .transform(lambda carriers: carriers.sortBy(lambda t: t[5], ascending=True))
+
+    second_flight = df \
+        .filter(lambda l: is_not_first_line(l)) \
+        .map(get_flights_details) \
+        .filter(lambda line: len(line) > 1) \
+        .filter(lambda line: is_carrier(line) and is_airportid(line)) \
+        .filter(lambda line: line.get('airport') == stop_over_airport_filter and line.get('dest_airport') == dest_airport_filter and line.get('departure_date') == next_date_filter) \
+        .map(lambda line: (line.get('airport'), line.get('dest_airport'), line.get('departure_date'), line.get('departure_time'), line.get('carrier'), line.get('arrival_delay'))) \
+        .transform(lambda carriers: carriers.sortBy(lambda t: t[5], ascending=True))
+
+    first_flight.foreachRDD(handler)
+    second_flight.foreachRDD(handler)
+	 ```
+	#### Running the application
+	```spark-submit  --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.1.0 --jars  spark-streaming-kafka-0-8_2.11-2.0.0-preview.jar streaming/bestFlightOnGivenDate.py localhost:9092 18.130.83.25:2181 aviation-dataset best-flight-on-given-day ATL OLD LAX 02/01/2008```
+	
+	[bestFlightOnGivenDate](https://github.com/kuda1992/CloudComputingCapstoneStreaming/blob/master/streaming/bestFlightOnGivenDate.py)
 	 
 	### Results
 	CMI - ORD
