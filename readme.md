@@ -315,3 +315,29 @@ Kafka is used to get data from s3 and publish it to Kafka topic (aviation datase
 	 
 	 #### Part 3
 	 Tom wants to arrive at each destination with as little delay as possible. You can assume you know the actual delay of each flight.
+	 
+	### Results
+	CMI - ORD
+	```
+	[[u'CMI', u'ORD', u'10.14']]
+	```
+	IND - CMH
+	```
+	[[u'IND', u'CMH', u'2.89']]
+	```
+	DFW - IAH
+	```
+	[[u'DFW', u'IAH', u'7.62']]
+	```
+	LAX - SFO
+	```
+	[[u'LAX', u'SFO', u'9.59']]
+	```
+	JFK - LAX
+	```
+	[[u'JFK', u'LAX', u'6.64']]
+	```
+	ATL - PHX
+	```
+	[[u'ATL', u'PHX', u'9.02']]
+	```
