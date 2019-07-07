@@ -2,6 +2,12 @@
 
 The project uses spark and kafka to answer various questions using the us statistics aviation data https://www.transtats.bts.gov/DataIndex.asp
 
+
+## System Architecture
+In this project I have used Kafka, Spark Streaming, and S3. Kafka is used to get data from s3 and publish it to Kafka topic (aviation dataset). 
+
+
+
 ### Question 1
 - Rank the top 10 most popular airports by numbers of flights to/from the airport.
 	
